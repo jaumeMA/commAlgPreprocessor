@@ -1,0 +1,11 @@
+#!/bin/sh
+
+for _var in "$@"
+do
+    echo "var: $_var"
+done
+
+#/usr/lib/gcc/i686-linux-gnu/4.8.1/cc1 $@
+./preProcessor $@
+
+exit $?

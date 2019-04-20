@@ -1,0 +1,261 @@
+# 1 "/usr/include/assert.h"
+
+
+
+
+
+
+
+
+# 1 "/usr/include/features.h"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 1 "/usr/include/i386-linux-gnu/bits/predefs.h"
+
+
+
+
+
+
+# 324 "/usr/include/features.h"
+# 324 "/usr/include/features.h"
+
+
+
+
+
+
+
+
+
+
+
+
+# 1 "/usr/include/i386-linux-gnu/sys/cdefs.h"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 1 "/usr/include/i386-linux-gnu/bits/wordsize.h"
+
+
+# 378 "/usr/include/i386-linux-gnu/sys/cdefs.h"
+# 378 "/usr/include/i386-linux-gnu/sys/cdefs.h"
+
+
+
+# 357 "/usr/include/features.h"
+# 357 "/usr/include/features.h"
+
+
+
+
+
+
+
+
+
+
+
+# 1 "/usr/include/i386-linux-gnu/gnu/stubs.h"
+
+
+# 1 "/usr/include/i386-linux-gnu/bits/wordsize.h"
+
+
+# 4 "/usr/include/i386-linux-gnu/gnu/stubs.h"
+# 4 "/usr/include/i386-linux-gnu/gnu/stubs.h"
+
+
+# 1 "/usr/include/i386-linux-gnu/gnu/stubs-32.h"
+
+
+
+# 7 "/usr/include/i386-linux-gnu/gnu/stubs.h"
+# 7 "/usr/include/i386-linux-gnu/gnu/stubs.h"
+
+
+# 389 "/usr/include/features.h"
+# 389 "/usr/include/features.h"
+
+
+
+# 37 "/usr/include/assert.h"
+# 37 "/usr/include/assert.h"
+
+
+
+
+
+
+
+
+
+
+
+extern"C"{
+
+
+extern void __assert_fail (__const char *__assertion, __const char *__file,
+			   unsigned int __line, __const char *__function)
+     throw() __attribute__ ((__noreturn__));
+
+
+extern void __assert_perror_fail (int __errnum, __const char *__file,
+				  unsigned int __line,
+				  __const char *__function)
+     throw() __attribute__ ((__noreturn__));
+
+
+
+extern void __assert (const char *__assertion, const char *__file, int __line)
+     throw() __attribute__ ((__noreturn__));
+
+
+}
+
+
+
+
+
+# 1 "./test/test.cpp"
+# 1 "./test/test.cpp"
+
+
+int main(int argc, char* argv[])
+{
+  std::vector<float> resArr;
+  float res = cos(3.14f);
+  
+  ((res!=0.f && "bad result!")?static_cast<void>(0):__assert_fail("#x","/usr/include/assert.h",94,__PRETTY_FUNCTION__));
+
+  resArr.push_back(res);
+
+  printf("el resultat es : %f\n",resArr[0]);
+
+  return 0;
+}

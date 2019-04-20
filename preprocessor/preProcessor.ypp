@@ -1,0 +1,751 @@
+%skeleton "lalr1.cc"
+%require "2.5"
+%error-verbose
+%defines
+%define namespace "preprocessor"
+%define parser_class_name "cParser"
+
+%code requires
+{
+    #include "cPreProcessorDefs.h"
+    #include "IPreprocessor.h"
+    #include <string>
+    #include <vector>
+
+    typedef std::vector<preprocessor::cToken> tokenArray;
+
+    namespace preprocessor
+    {
+        class cScanner;
+    }
+}
+
+%lex-param {cScanner& scanner}
+%parse-param {cScanner& scanner}
+
+%lex-param {IPreprocessor* preproc}
+%parse-param {IPreprocessor* preproc}
+
+%code
+{
+#include <math.h>
+#include <memory>
+#include <cstring>
+#include "cScanner.h"
+#include "cTarget.h"
+
+#define YYMAXDEPTH 200000
+
+using namespace std;
+
+static int yylex(preprocessor::cParser::semantic_type* yylval, preprocessor::cScanner& scanner, preprocessor::IPreprocessor* preproc);
+
+template<typename T>
+void releaseMem(T*& ptr);
+
+int compute(int a, int b, const preprocessor::cToken& op);
+int compute(int a, const preprocessor::cToken& op);
+}
+
+//-- SYMBOL SEMANTIC VALUES -----------------------------
+%union
+{
+    int val;
+    bool cond_expr;
+    dataStr sym;
+    char* unit_sym;
+    tokenArray* tokensArr;
+    preprocessor::cToken* token;
+};
+
+%destructor { if($$) { delete $$; ($$) = NULL; } } <tokenArray>
+
+//production tokens
+%token <sym> SYMBOLS LITERAL PRAGMA DEFINE DEFINED UNDEFINE INCLUDE INCLUDE_NEXT INCLUDE_COMMA_DELIM INCLUDE_GL_DELIM INCLUDE_FILENAME IDENT IDENT_CALL NUMBER
+%token <sym> IF IFDEF IFNDEF ELIF ELSE END BUILTIN_COLLAPSE_VARIADIC ERROR WARNING COMPUTE
+%token <unit_sym> TLPAREN TRPAREN TCOMMA BINARY_OP UNARY_OP TERNARY_LEFT_OP TERNARY_RIGHT_OP
+%token <tokensArr> BUILTIN_CONCAT BUILTIN_LINE BUILTIN_STRINGIZED
+%token <val> COMMENT END_LINE
+
+//actions
+%type <val> foo evaluate_factor evaluate_leave evaluate_expr compute_token end_action
+%type <cond_expr> conditional_expr
+%type <sym> compilation_unit stmnt include_token pragma_token define_token undefine_token ifdef_token newTokens error_token warning_token
+%type <tokensArr> tokens _tokens _tokensData define_definition args _args _arg _argsIdent acquireArr builtin_macro
+%type <token> unary_op _unary_op binary_op _binary_op ident _ident ident_no_expand _ident_no_expand number _number acquireToken
+
+//-- GRAMMAR RULES ---------------------------------------
+%%
+run: compilation_unit
+{
+    if(preproc)
+    {
+        preproc->endPreprocessing();
+    }
+}
+
+compilation_unit: stmnt compilation_unit
+            | stmnt
+
+stmnt: include_token
+{
+    $$ = $1;
+}
+| define_token
+{
+    $$ = $1;
+}
+| undefine_token
+{
+    $$ = $1;
+}
+| ifdef_token
+{
+    $$ = $1;
+}
+| compute_token
+{
+    scanner.setComputeValue($1);
+    $$ = dataStr();
+}
+| error_token
+{
+    $$ = $1;
+}
+| warning_token
+{
+    $$ = $1;
+}
+| pragma_token
+{
+    $$ = $1;
+}
+| newTokens
+{
+    $$ = $1;
+}
+| COMMENT
+{
+    $$ = dataStr();
+
+    if($1 > 5)
+    {
+        scanner.flushLocationInfo();
+    }
+    else
+    {
+        preproc->newLine($1);
+    }
+}
+|END_LINE
+{
+    $$ = dataStr();
+    preproc->newLine(1);
+}
+
+newTokens: tokens end_action
+{
+    preproc->newTokens(*$1);
+    preproc->newLine($2);
+
+    releaseMem($1);
+}
+
+include_token: INCLUDE _ident_no_expand
+{
+/*    if(preproc->hasMacro(*$2))
+    {
+        printf("EP, incloent fixter predefined\n");
+        const preprocessor::IMacro& macro = preproc->getMacro(*$2);
+        std::vector<preprocessor::cToken> expandedMacro = macro.expand();
+        if(expandedMacro.size() == 1)
+        {
+            const preprocessor::cToken& _token = expandedMacro[0];
+            preproc->newInclude(_token, _token.m_name[0]=='<' && _token.m_name[_token.m_name.size()-1]=='>', false);
+        }
+    }
+*/
+    releaseMem($2);
+}
+| INCLUDE INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+{
+    preprocessor::cToken _token = preprocessor::cToken(std::string((char *)$3.m_data,(char *)$3.m_data+$3.m_leng),preprocessor::tokenType::IDENT);
+
+    preproc->newInclude(_token, false, false);
+}
+| INCLUDE INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM
+{
+    preprocessor::cToken _token = preprocessor::cToken(std::string((char *)$3.m_data,(char *)$3.m_data+$3.m_leng),preprocessor::tokenType::IDENT);
+
+    preproc->newInclude(_token, true, false);
+}
+| INCLUDE_NEXT INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+{
+    preprocessor::cToken _token = preprocessor::cToken(std::string((char *)$3.m_data,(char *)$3.m_data+$3.m_leng),preprocessor::tokenType::IDENT);
+
+    preproc->newInclude(_token, false, true);
+}
+| INCLUDE_NEXT INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM
+{
+    preprocessor::cToken _token = preprocessor::cToken(std::string((char *)$3.m_data,(char *)$3.m_data+$3.m_leng),preprocessor::tokenType::IDENT);
+
+    preproc->newInclude(_token, true, true);
+}
+
+define_token:  DEFINE ident_no_expand args define_definition end_action
+{
+    preproc->defineMacro(*$2,*$3,*$4,cMacroType::FUNCTION_LIKE);
+
+    releaseMem($2);
+    releaseMem($3);
+    releaseMem($4);
+}
+| DEFINE ident_no_expand define_definition end_action
+{
+    preproc->defineMacro(*$2,tokenArray(),*$3,cMacroType::OBJECT_LIKE);
+    releaseMem($2);
+    releaseMem($3);
+}
+| DEFINE ident_no_expand args end_action
+{
+    preproc->defineMacro(*$2,*$3,tokenArray(),cMacroType::FUNCTION_LIKE);
+    releaseMem($2);
+    releaseMem($3);
+}
+| DEFINE ident_no_expand end_action
+{
+    preproc->defineMacro(*$2,tokenArray(),tokenArray(),cMacroType::OBJECT_LIKE);
+    releaseMem($2);
+}
+
+undefine_token: UNDEFINE ident_no_expand end_action
+{
+    preproc->undefMacro(*$2);
+
+    releaseMem($2);
+}
+
+error_token: ERROR tokens end_action
+{
+    preproc->newFailMsg(*$2, cFailMsgType::ERROR);
+
+    releaseMem($2);
+}
+| ERROR end_action
+{
+    preproc->newFailMsg(std::vector<cToken>(), cFailMsgType::ERROR);
+}
+
+warning_token: WARNING tokens end_action
+{
+    preproc->newFailMsg(*$2, cFailMsgType::WARNING);
+
+    releaseMem($2);
+}
+| WARNING end_action
+{
+    preproc->newFailMsg(std::vector<cToken>(), cFailMsgType::WARNING);
+}
+
+pragma_token : PRAGMA tokens end_action
+{
+    preproc->newPragma(*$2);
+
+    releaseMem($2);
+}
+
+ifdef_token: IFDEF ident_no_expand end_action
+{
+    bool cond = preprocessor::isBuiltIn(*$2) || preproc->hasMacro(*$2);
+
+    releaseMem($2);
+
+    preproc->newIf(cond);
+
+    $$ = dataStr();
+}
+| IFNDEF ident_no_expand end_action
+{
+    bool cond = preprocessor::isBuiltIn(*$2) || preproc->hasMacro(*$2);
+
+    releaseMem($2);
+
+    preproc->newIf(!cond);
+
+    $$ = dataStr();
+}
+| IF conditional_expr end_action
+{
+    bool cond = $2;
+
+    preproc->newIf(cond);
+
+    $$ = dataStr();
+}
+| ELIF conditional_expr end_action
+{
+    bool cond = $2;
+
+    preproc->newElse(cond);
+
+    $$ = dataStr();
+}
+| ELSE end_action
+{
+    preproc->newElse(true);
+
+    $$ = dataStr();
+}
+| END end_action
+{
+    preproc->newIfEnd();
+
+    $$ = dataStr();
+}
+
+compute_token: COMPUTE evaluate_expr
+{
+    $$ = $2;
+}
+
+define_definition: tokens
+{
+    $$ = $1;
+}
+
+conditional_expr: evaluate_expr
+{
+    $$ = $1 != 0;
+}
+
+evaluate_expr: evaluate_leave binary_op evaluate_expr
+{
+    $$ = compute($1,$3,*$2);
+}
+| evaluate_leave TERNARY_LEFT_OP evaluate_leave TERNARY_RIGHT_OP evaluate_leave
+{
+    bool cond = $1 != 0;
+
+    if(cond)
+    {
+        $$ = $3;
+    }
+    else
+    {
+        $$ = $5;
+    }
+}
+| evaluate_leave
+{
+    $$ = $1;
+}
+
+evaluate_leave: evaluate_factor binary_op evaluate_factor
+{
+    $$ = compute($1,$3,*$2) != 0;
+    releaseMem($2);
+}
+| unary_op evaluate_leave
+{
+    $$ = compute($2,*$1);
+}
+| TLPAREN evaluate_expr TRPAREN
+{
+    $$ = $2;
+}
+| evaluate_factor
+{
+    $$ = $1;
+}
+
+evaluate_factor: NUMBER
+{
+    $$ = atoi($1.m_data);
+}
+| ident
+{
+    $$ = preproc->macroEval(*$1, std::vector<preprocessor::cToken>());
+    releaseMem($1);
+}
+| ident args
+{
+    $$ = preproc->macroEval(*$1,*$2);
+    releaseMem($1);
+    releaseMem($2);
+}
+| DEFINED TLPAREN ident_no_expand TRPAREN
+{
+    $$ = preprocessor::isBuiltIn(*$3) || preproc->hasMacro(*$3);
+
+    releaseMem($3);
+}
+| DEFINED ident_no_expand
+{
+    $$ = preprocessor::isBuiltIn(*$2) || preproc->hasMacro(*$2);
+
+    releaseMem($2);
+}
+
+args: acquireArr foo _args
+{
+    $$ = $3;
+}
+
+_args: TLPAREN _arg TRPAREN
+{
+    $$ = $2;
+}
+| TLPAREN TRPAREN
+{
+    tokenArray& arr = *$<tokensArr>-1;
+    $$ = &arr;
+}
+
+_arg: _argsIdent TCOMMA _arg
+{
+    $$ = $1;
+}
+| _argsIdent
+{
+    $$ = $1;
+}
+
+_argsIdent: ident
+{
+    tokenArray& arr = *$<tokensArr>-1;
+    arr.push_back(*$1);
+    releaseMem($1);
+    $$ = &arr;
+}
+| number
+{
+    tokenArray& arr = *$<tokensArr>-1;
+    arr.push_back(*$1);
+    releaseMem($1);
+    $$ = &arr;
+}
+
+foo:
+{}
+
+tokens: acquireArr _tokens
+{
+    $$ = $2;
+}
+
+acquireArr:
+{
+    tokenArray* res = new tokenArray();
+
+    $$ = res;
+}
+
+acquireToken:
+{
+    preprocessor::cToken* res = new preprocessor::cToken();
+
+    $$ = res;
+}
+
+_tokens: _tokensData _tokens
+{
+    $$ = $1;
+}
+| _tokensData
+{
+    $$ = $1;
+}
+
+_tokensData: builtin_macro
+{
+    $$ = $1;
+}
+| ident
+{
+    tokenArray& arr = *$<tokensArr>0;
+    arr.push_back(*$1);
+    releaseMem($1);
+    $$ = &arr;
+}
+| SYMBOLS
+{
+    tokenArray& arr = *$<tokensArr>0;
+    preprocessor::cToken _token = preprocessor::cToken(std::string((char *)$1.m_data,(char *)$1.m_data+$1.m_leng),preprocessor::tokenType::SYMBOL);
+    arr.push_back(_token);
+    $$ = &arr;
+}
+| NUMBER
+{
+    tokenArray& arr = *$<tokensArr>0;
+    preprocessor::cToken _token = preprocessor::cToken(std::string((char *)$1.m_data,(char *)$1.m_data+$1.m_leng),preprocessor::tokenType::NUMBER);
+    arr.push_back(_token);
+    $$ = &arr;
+}
+| LITERAL
+{
+    tokenArray& arr = *$<tokensArr>0;
+    preprocessor::cToken _token = preprocessor::cToken(std::string((char *)$1.m_data,(char *)$1.m_data+$1.m_leng),preprocessor::tokenType::LITERAL);
+    arr.push_back(_token);
+    $$ = &arr;
+}
+
+builtin_macro: BUILTIN_CONCAT
+{
+    preprocessor::cToken _token;
+    tokenArray& args = *$<tokensArr>1;
+    tokenArray& arr = *$<tokensArr>0;
+
+    //rewrite the related tokens for conforming a concat macro
+    arr.push_back(cToken("__Concat__", tokenType::IDENT_CALL));
+    arr.push_back(cToken("(", tokenType::SYMBOL));
+
+    tokenArray::const_iterator itArg = args.begin();
+    arr.push_back((*itArg));
+
+    itArg++;
+    for(;itArg!=args.end();itArg++)
+    {
+        arr.push_back(cToken(",", tokenType::IDENT));
+        arr.push_back((*itArg));
+    }
+
+    arr.push_back(cToken(")", tokenType::SYMBOL));
+
+    delete $<tokensArr>1;
+
+    $$ = &arr;
+}
+| BUILTIN_COLLAPSE_VARIADIC
+{
+    preprocessor::cToken _token;
+    tokenArray& arr = *$<tokensArr>0;
+
+    //rewrite the related tokens for conforming a concat macro
+    arr.push_back(cToken("__CollapseVariadic__", tokenType::IDENT_CALL));
+    arr.push_back(cToken("(", tokenType::SYMBOL));
+    arr.push_back(cToken("__VA_ARGS__",preprocessor::tokenType::IDENT));
+    arr.push_back(cToken(")", tokenType::SYMBOL));
+
+    $$ = &arr;
+}
+| BUILTIN_LINE
+{
+    preprocessor::cToken _token;
+    tokenArray& args = *$<tokensArr>1;
+    tokenArray& arr = *$<tokensArr>0;
+
+    //rewrite the related tokens for conforming a concat macro
+    arr.push_back(cToken("# ",tokenType::IDENT));
+    arr.push_back(args[0]);
+
+    if(args.size() > 1)
+    {
+        arr.push_back(args[1]);
+    }
+
+    delete $<tokensArr>1;
+
+    $$ = &arr;
+}
+| BUILTIN_STRINGIZED
+{
+    tokenArray& arr = *$<tokensArr>0;
+    tokenArray& args = *$<tokensArr>1;
+
+    //rewrite the related tokens for conforming a concat macro
+    arr.push_back(cToken("__Stringized__",tokenType::IDENT_CALL));
+    arr.push_back(cToken("(", tokenType::SYMBOL));
+    arr.push_back(args[0]);
+    arr.push_back(cToken(")", tokenType::SYMBOL));
+
+    delete $<tokensArr>1;
+
+    $$ = &arr;
+}
+
+binary_op: acquireToken _binary_op
+{
+    $$ = $2;
+}
+
+_binary_op: BINARY_OP
+{
+    preprocessor::cToken& _token = *$<token>0;
+    _token = preprocessor::cToken($1,preprocessor::tokenType::SYMBOL);
+    $$ = &_token;
+}
+
+unary_op: acquireToken _unary_op
+{
+    $$ = $2;
+}
+
+_unary_op: UNARY_OP
+{
+    preprocessor::cToken& _token = *$<token>0;
+    _token = preprocessor::cToken($1,preprocessor::tokenType::SYMBOL);
+    $$ = &_token;
+}
+
+ident_no_expand: acquireToken _ident_no_expand
+{
+    $$ = $2;
+}
+
+_ident_no_expand: IDENT
+{
+    preprocessor::cToken& _token = *$<token>0;
+    _token = preprocessor::cToken(std::string($1.m_data,$1.m_data+$1.m_leng),preprocessor::tokenType::IDENT);
+    $$ = &_token;
+}
+
+ident: acquireToken _ident
+{
+    $$ = $2;
+}
+
+_ident: IDENT
+{
+    preprocessor::cToken& _token = *$<token>0;
+    _token = preprocessor::expandBuiltinMacro($1.m_data,scanner, tokenType::IDENT);
+    $$ = &_token;
+}
+| IDENT_CALL
+{
+    preprocessor::cToken& _token = *$<token>0;
+    _token = preprocessor::expandBuiltinMacro($1.m_data,scanner, tokenType::IDENT_CALL);
+    $$ = &_token;
+}
+
+number: acquireToken _number
+{
+    $$ = $2;
+}
+
+_number: NUMBER
+{
+    preprocessor::cToken& _token = *$<token>0;
+    _token = preprocessor::cToken(std::string((char *)$1.m_data,(char *)$1.m_data+$1.m_leng),preprocessor::tokenType::NUMBER);
+    $$ = &_token;
+}
+
+end_action : END_LINE
+{
+    $$ = 1;
+}
+| COMMENT
+{
+    $$ = 1;
+}
+
+%%
+//-- FUNCTION DEFINITIONS ---------------------------------
+
+template<typename T>
+void releaseMem(T*& ptr)
+{
+    if(ptr)
+    {
+        delete ptr;
+        ptr = NULL;
+    }
+
+    return;
+}
+
+int compute(int a, const preprocessor::cToken& op)
+{
+    int res = 0;
+
+    if(op.m_name == "!")
+    {
+        res = (a == 0);
+    }
+
+    return res;
+}
+
+int compute(int a, int b, const preprocessor::cToken& op)
+{
+    int res = 0;
+
+    if(op.m_name == "+")
+    {
+        res = a + b;
+    }
+    else if(op.m_name == "-")
+    {
+        res = a - b;
+    }
+    else if(op.m_name == "*")
+    {
+        res = a * b;
+    }
+    else if(op.m_name == "/")
+    {
+        res = a / b;
+    }
+    else if(op.m_name == "&&")
+    {
+        res = a && b;
+    }
+    else if(op.m_name == "||")
+    {
+        res = a || b;
+    }
+    else if(op.m_name == "==")
+    {
+        res = a == b;
+    }
+    else if(op.m_name == "!=")
+    {
+        res = a != b;
+    }
+    else if(op.m_name == ">")
+    {
+        res = a > b;
+    }
+    else if(op.m_name == ">=")
+    {
+        res = a >= b;
+    }
+    else if(op.m_name == "<")
+    {
+        res = a < b;
+    }
+    else if(op.m_name == "<=")
+    {
+        res = a <= b;
+    }
+    else if(op.m_name == "<<")
+    {
+        res = a << b;
+    }
+    else if(op.m_name == ">>")
+    {
+        res = a >> b;
+    }
+    else if(op.m_name == "&")
+    {
+        res = a & b;
+    }
+    else if(op.m_name == "|")
+    {
+        res = a | b;
+    }
+
+    return res;
+}
+
+void preprocessor::cParser::error( const preprocessor::cParser::location_type &l,
+                           const std::string &err_message)
+{
+   std::cerr << "Error in file " << scanner.getCurrFile() << ", line " << scanner.getCurrLine() << ": " << err_message << "\n";
+}
+
+static int yylex(preprocessor::cParser::semantic_type* yylval, preprocessor::cScanner& scanner, preprocessor::IPreprocessor* preproc)
+{
+    int res = scanner.yylex(yylval);
+
+    return res;
+}

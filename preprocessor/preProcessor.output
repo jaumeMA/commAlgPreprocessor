@@ -1,0 +1,1644 @@
+State 47 conflicts: 1 reduce/reduce
+
+
+Grammar
+
+    0 $accept: run $end
+
+    1 run: compilation_unit
+
+    2 compilation_unit: stmnt compilation_unit
+    3                 | stmnt
+
+    4 stmnt: include_token
+    5      | define_token
+    6      | undefine_token
+    7      | ifdef_token
+    8      | compute_token
+    9      | error_token
+   10      | warning_token
+   11      | pragma_token
+   12      | newTokens
+   13      | COMMENT
+   14      | END_LINE
+
+   15 newTokens: tokens end_action
+
+   16 include_token: INCLUDE _ident_no_expand
+   17              | INCLUDE INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+   18              | INCLUDE INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM
+   19              | INCLUDE_NEXT INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+   20              | INCLUDE_NEXT INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM
+
+   21 define_token: DEFINE ident_no_expand args define_definition end_action
+   22             | DEFINE ident_no_expand define_definition end_action
+   23             | DEFINE ident_no_expand args end_action
+   24             | DEFINE ident_no_expand end_action
+
+   25 undefine_token: UNDEFINE ident_no_expand end_action
+
+   26 error_token: ERROR tokens end_action
+   27            | ERROR end_action
+
+   28 warning_token: WARNING tokens end_action
+   29              | WARNING end_action
+
+   30 pragma_token: PRAGMA tokens end_action
+
+   31 ifdef_token: IFDEF ident_no_expand end_action
+   32            | IFNDEF ident_no_expand end_action
+   33            | IF conditional_expr end_action
+   34            | ELIF conditional_expr end_action
+   35            | ELSE end_action
+   36            | END end_action
+
+   37 compute_token: COMPUTE evaluate_expr
+
+   38 define_definition: tokens
+
+   39 conditional_expr: evaluate_expr
+
+   40 evaluate_expr: evaluate_leave binary_op evaluate_expr
+   41              | evaluate_leave TERNARY_LEFT_OP evaluate_leave TERNARY_RIGHT_OP evaluate_leave
+   42              | evaluate_leave
+
+   43 evaluate_leave: evaluate_factor binary_op evaluate_factor
+   44               | unary_op evaluate_leave
+   45               | TLPAREN evaluate_expr TRPAREN
+   46               | evaluate_factor
+
+   47 evaluate_factor: NUMBER
+   48                | ident
+   49                | ident args
+   50                | DEFINED TLPAREN ident_no_expand TRPAREN
+   51                | DEFINED ident_no_expand
+
+   52 args: acquireArr foo _args
+
+   53 _args: TLPAREN _arg TRPAREN
+   54      | TLPAREN TRPAREN
+
+   55 _arg: _argsIdent TCOMMA _arg
+   56     | _argsIdent
+
+   57 _argsIdent: ident
+   58           | number
+
+   59 foo: /* empty */
+
+   60 tokens: acquireArr _tokens
+
+   61 acquireArr: /* empty */
+
+   62 acquireToken: /* empty */
+
+   63 _tokens: _tokensData _tokens
+   64        | _tokensData
+
+   65 _tokensData: builtin_macro
+   66            | ident
+   67            | SYMBOLS
+   68            | NUMBER
+   69            | LITERAL
+
+   70 builtin_macro: BUILTIN_CONCAT
+   71              | BUILTIN_COLLAPSE_VARIADIC
+   72              | BUILTIN_LINE
+   73              | BUILTIN_STRINGIZED
+
+   74 binary_op: acquireToken _binary_op
+
+   75 _binary_op: BINARY_OP
+
+   76 unary_op: acquireToken _unary_op
+
+   77 _unary_op: UNARY_OP
+
+   78 ident_no_expand: acquireToken _ident_no_expand
+
+   79 _ident_no_expand: IDENT
+
+   80 ident: acquireToken _ident
+
+   81 _ident: IDENT
+   82       | IDENT_CALL
+
+   83 number: acquireToken _number
+
+   84 _number: NUMBER
+
+   85 end_action: END_LINE
+   86           | COMMENT
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+SYMBOLS (258) 67
+LITERAL (259) 69
+PRAGMA (260) 30
+DEFINE (261) 21 22 23 24
+DEFINED (262) 50 51
+UNDEFINE (263) 25
+INCLUDE (264) 16 17 18
+INCLUDE_NEXT (265) 19 20
+INCLUDE_COMMA_DELIM (266) 17 19
+INCLUDE_GL_DELIM (267) 18 20
+INCLUDE_FILENAME (268) 17 18 19 20
+IDENT (269) 79 81
+IDENT_CALL (270) 82
+NUMBER (271) 47 68 84
+IF (272) 33
+IFDEF (273) 31
+IFNDEF (274) 32
+ELIF (275) 34
+ELSE (276) 35
+END (277) 36
+BUILTIN_COLLAPSE_VARIADIC (278) 71
+ERROR (279) 26 27
+WARNING (280) 28 29
+COMPUTE (281) 37
+TLPAREN (282) 45 50 53 54
+TRPAREN (283) 45 50 53 54
+TCOMMA (284) 55
+BINARY_OP (285) 75
+UNARY_OP (286) 77
+TERNARY_LEFT_OP (287) 41
+TERNARY_RIGHT_OP (288) 41
+BUILTIN_CONCAT (289) 70
+BUILTIN_LINE (290) 72
+BUILTIN_STRINGIZED (291) 73
+COMMENT (292) 13 86
+END_LINE (293) 14 85
+
+
+Nonterminals, with rules where they appear
+
+$accept (39)
+    on left: 0
+run (40)
+    on left: 1, on right: 0
+compilation_unit (41)
+    on left: 2 3, on right: 1 2
+stmnt (42)
+    on left: 4 5 6 7 8 9 10 11 12 13 14, on right: 2 3
+newTokens (43)
+    on left: 15, on right: 12
+include_token (44)
+    on left: 16 17 18 19 20, on right: 4
+define_token (45)
+    on left: 21 22 23 24, on right: 5
+undefine_token (46)
+    on left: 25, on right: 6
+error_token (47)
+    on left: 26 27, on right: 9
+warning_token (48)
+    on left: 28 29, on right: 10
+pragma_token (49)
+    on left: 30, on right: 11
+ifdef_token (50)
+    on left: 31 32 33 34 35 36, on right: 7
+compute_token (51)
+    on left: 37, on right: 8
+define_definition (52)
+    on left: 38, on right: 21 22
+conditional_expr (53)
+    on left: 39, on right: 33 34
+evaluate_expr (54)
+    on left: 40 41 42, on right: 37 39 40 45
+evaluate_leave (55)
+    on left: 43 44 45 46, on right: 40 41 42 44
+evaluate_factor (56)
+    on left: 47 48 49 50 51, on right: 43 46
+args (57)
+    on left: 52, on right: 21 23 49
+_args (58)
+    on left: 53 54, on right: 52
+_arg (59)
+    on left: 55 56, on right: 53 55
+_argsIdent (60)
+    on left: 57 58, on right: 55 56
+foo (61)
+    on left: 59, on right: 52
+tokens (62)
+    on left: 60, on right: 15 26 28 30 38
+acquireArr (63)
+    on left: 61, on right: 52 60
+acquireToken (64)
+    on left: 62, on right: 74 76 78 80 83
+_tokens (65)
+    on left: 63 64, on right: 60 63
+_tokensData (66)
+    on left: 65 66 67 68 69, on right: 63 64
+builtin_macro (67)
+    on left: 70 71 72 73, on right: 65
+binary_op (68)
+    on left: 74, on right: 40 43
+_binary_op (69)
+    on left: 75, on right: 74
+unary_op (70)
+    on left: 76, on right: 44
+_unary_op (71)
+    on left: 77, on right: 76
+ident_no_expand (72)
+    on left: 78, on right: 21 22 23 24 25 31 32 50 51
+_ident_no_expand (73)
+    on left: 79, on right: 16 78
+ident (74)
+    on left: 80, on right: 48 49 57 66
+_ident (75)
+    on left: 81 82, on right: 80
+number (76)
+    on left: 83, on right: 58
+_number (77)
+    on left: 84, on right: 83
+end_action (78)
+    on left: 85 86, on right: 15 21 22 23 24 25 26 27 28 29 30 31 32
+    33 34 35 36
+
+
+state 0
+
+    0 $accept: . run $end
+
+    PRAGMA        shift, and go to state 1
+    DEFINE        shift, and go to state 2
+    UNDEFINE      shift, and go to state 3
+    INCLUDE       shift, and go to state 4
+    INCLUDE_NEXT  shift, and go to state 5
+    IF            shift, and go to state 6
+    IFDEF         shift, and go to state 7
+    IFNDEF        shift, and go to state 8
+    ELIF          shift, and go to state 9
+    ELSE          shift, and go to state 10
+    END           shift, and go to state 11
+    ERROR         shift, and go to state 12
+    WARNING       shift, and go to state 13
+    COMPUTE       shift, and go to state 14
+    COMMENT       shift, and go to state 15
+    END_LINE      shift, and go to state 16
+
+    $default  reduce using rule 61 (acquireArr)
+
+    run               go to state 17
+    compilation_unit  go to state 18
+    stmnt             go to state 19
+    newTokens         go to state 20
+    include_token     go to state 21
+    define_token      go to state 22
+    undefine_token    go to state 23
+    error_token       go to state 24
+    warning_token     go to state 25
+    pragma_token      go to state 26
+    ifdef_token       go to state 27
+    compute_token     go to state 28
+    tokens            go to state 29
+    acquireArr        go to state 30
+
+
+state 1
+
+   30 pragma_token: PRAGMA . tokens end_action
+
+    $default  reduce using rule 61 (acquireArr)
+
+    tokens      go to state 31
+    acquireArr  go to state 30
+
+
+state 2
+
+   21 define_token: DEFINE . ident_no_expand args define_definition end_action
+   22             | DEFINE . ident_no_expand define_definition end_action
+   23             | DEFINE . ident_no_expand args end_action
+   24             | DEFINE . ident_no_expand end_action
+
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken     go to state 32
+    ident_no_expand  go to state 33
+
+
+state 3
+
+   25 undefine_token: UNDEFINE . ident_no_expand end_action
+
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken     go to state 32
+    ident_no_expand  go to state 34
+
+
+state 4
+
+   16 include_token: INCLUDE . _ident_no_expand
+   17              | INCLUDE . INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+   18              | INCLUDE . INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM
+
+    INCLUDE_COMMA_DELIM  shift, and go to state 35
+    INCLUDE_GL_DELIM     shift, and go to state 36
+    IDENT                shift, and go to state 37
+
+    _ident_no_expand  go to state 38
+
+
+state 5
+
+   19 include_token: INCLUDE_NEXT . INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+   20              | INCLUDE_NEXT . INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM
+
+    INCLUDE_COMMA_DELIM  shift, and go to state 39
+    INCLUDE_GL_DELIM     shift, and go to state 40
+
+
+state 6
+
+   33 ifdef_token: IF . conditional_expr end_action
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    conditional_expr  go to state 44
+    evaluate_expr     go to state 45
+    evaluate_leave    go to state 46
+    evaluate_factor   go to state 47
+    acquireToken      go to state 48
+    unary_op          go to state 49
+    ident             go to state 50
+
+
+state 7
+
+   31 ifdef_token: IFDEF . ident_no_expand end_action
+
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken     go to state 32
+    ident_no_expand  go to state 51
+
+
+state 8
+
+   32 ifdef_token: IFNDEF . ident_no_expand end_action
+
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken     go to state 32
+    ident_no_expand  go to state 52
+
+
+state 9
+
+   34 ifdef_token: ELIF . conditional_expr end_action
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    conditional_expr  go to state 53
+    evaluate_expr     go to state 45
+    evaluate_leave    go to state 46
+    evaluate_factor   go to state 47
+    acquireToken      go to state 48
+    unary_op          go to state 49
+    ident             go to state 50
+
+
+state 10
+
+   35 ifdef_token: ELSE . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 56
+
+
+state 11
+
+   36 ifdef_token: END . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 57
+
+
+state 12
+
+   26 error_token: ERROR . tokens end_action
+   27            | ERROR . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    $default  reduce using rule 61 (acquireArr)
+
+    tokens      go to state 58
+    acquireArr  go to state 30
+    end_action  go to state 59
+
+
+state 13
+
+   28 warning_token: WARNING . tokens end_action
+   29              | WARNING . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    $default  reduce using rule 61 (acquireArr)
+
+    tokens      go to state 60
+    acquireArr  go to state 30
+    end_action  go to state 61
+
+
+state 14
+
+   37 compute_token: COMPUTE . evaluate_expr
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    evaluate_expr    go to state 62
+    evaluate_leave   go to state 46
+    evaluate_factor  go to state 47
+    acquireToken     go to state 48
+    unary_op         go to state 49
+    ident            go to state 50
+
+
+state 15
+
+   13 stmnt: COMMENT .
+
+    $default  reduce using rule 13 (stmnt)
+
+
+state 16
+
+   14 stmnt: END_LINE .
+
+    $default  reduce using rule 14 (stmnt)
+
+
+state 17
+
+    0 $accept: run . $end
+
+    $end  shift, and go to state 63
+
+
+state 18
+
+    1 run: compilation_unit .
+
+    $default  reduce using rule 1 (run)
+
+
+state 19
+
+    2 compilation_unit: stmnt . compilation_unit
+    3                 | stmnt .
+
+    PRAGMA        shift, and go to state 1
+    DEFINE        shift, and go to state 2
+    UNDEFINE      shift, and go to state 3
+    INCLUDE       shift, and go to state 4
+    INCLUDE_NEXT  shift, and go to state 5
+    IF            shift, and go to state 6
+    IFDEF         shift, and go to state 7
+    IFNDEF        shift, and go to state 8
+    ELIF          shift, and go to state 9
+    ELSE          shift, and go to state 10
+    END           shift, and go to state 11
+    ERROR         shift, and go to state 12
+    WARNING       shift, and go to state 13
+    COMPUTE       shift, and go to state 14
+    COMMENT       shift, and go to state 15
+    END_LINE      shift, and go to state 16
+
+    $end      reduce using rule 3 (compilation_unit)
+    $default  reduce using rule 61 (acquireArr)
+
+    compilation_unit  go to state 64
+    stmnt             go to state 19
+    newTokens         go to state 20
+    include_token     go to state 21
+    define_token      go to state 22
+    undefine_token    go to state 23
+    error_token       go to state 24
+    warning_token     go to state 25
+    pragma_token      go to state 26
+    ifdef_token       go to state 27
+    compute_token     go to state 28
+    tokens            go to state 29
+    acquireArr        go to state 30
+
+
+state 20
+
+   12 stmnt: newTokens .
+
+    $default  reduce using rule 12 (stmnt)
+
+
+state 21
+
+    4 stmnt: include_token .
+
+    $default  reduce using rule 4 (stmnt)
+
+
+state 22
+
+    5 stmnt: define_token .
+
+    $default  reduce using rule 5 (stmnt)
+
+
+state 23
+
+    6 stmnt: undefine_token .
+
+    $default  reduce using rule 6 (stmnt)
+
+
+state 24
+
+    9 stmnt: error_token .
+
+    $default  reduce using rule 9 (stmnt)
+
+
+state 25
+
+   10 stmnt: warning_token .
+
+    $default  reduce using rule 10 (stmnt)
+
+
+state 26
+
+   11 stmnt: pragma_token .
+
+    $default  reduce using rule 11 (stmnt)
+
+
+state 27
+
+    7 stmnt: ifdef_token .
+
+    $default  reduce using rule 7 (stmnt)
+
+
+state 28
+
+    8 stmnt: compute_token .
+
+    $default  reduce using rule 8 (stmnt)
+
+
+state 29
+
+   15 newTokens: tokens . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 65
+
+
+state 30
+
+   60 tokens: acquireArr . _tokens
+
+    SYMBOLS                    shift, and go to state 66
+    LITERAL                    shift, and go to state 67
+    NUMBER                     shift, and go to state 68
+    BUILTIN_COLLAPSE_VARIADIC  shift, and go to state 69
+    BUILTIN_CONCAT             shift, and go to state 70
+    BUILTIN_LINE               shift, and go to state 71
+    BUILTIN_STRINGIZED         shift, and go to state 72
+
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken   go to state 73
+    _tokens        go to state 74
+    _tokensData    go to state 75
+    builtin_macro  go to state 76
+    ident          go to state 77
+
+
+state 31
+
+   30 pragma_token: PRAGMA tokens . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 78
+
+
+state 32
+
+   78 ident_no_expand: acquireToken . _ident_no_expand
+
+    IDENT  shift, and go to state 37
+
+    _ident_no_expand  go to state 79
+
+
+state 33
+
+   21 define_token: DEFINE ident_no_expand . args define_definition end_action
+   22             | DEFINE ident_no_expand . define_definition end_action
+   23             | DEFINE ident_no_expand . args end_action
+   24             | DEFINE ident_no_expand . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    $default  reduce using rule 61 (acquireArr)
+
+    define_definition  go to state 80
+    args               go to state 81
+    tokens             go to state 82
+    acquireArr         go to state 83
+    end_action         go to state 84
+
+
+state 34
+
+   25 undefine_token: UNDEFINE ident_no_expand . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 85
+
+
+state 35
+
+   17 include_token: INCLUDE INCLUDE_COMMA_DELIM . INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+
+    INCLUDE_FILENAME  shift, and go to state 86
+
+
+state 36
+
+   18 include_token: INCLUDE INCLUDE_GL_DELIM . INCLUDE_FILENAME INCLUDE_GL_DELIM
+
+    INCLUDE_FILENAME  shift, and go to state 87
+
+
+state 37
+
+   79 _ident_no_expand: IDENT .
+
+    $default  reduce using rule 79 (_ident_no_expand)
+
+
+state 38
+
+   16 include_token: INCLUDE _ident_no_expand .
+
+    $default  reduce using rule 16 (include_token)
+
+
+state 39
+
+   19 include_token: INCLUDE_NEXT INCLUDE_COMMA_DELIM . INCLUDE_FILENAME INCLUDE_COMMA_DELIM
+
+    INCLUDE_FILENAME  shift, and go to state 88
+
+
+state 40
+
+   20 include_token: INCLUDE_NEXT INCLUDE_GL_DELIM . INCLUDE_FILENAME INCLUDE_GL_DELIM
+
+    INCLUDE_FILENAME  shift, and go to state 89
+
+
+state 41
+
+   50 evaluate_factor: DEFINED . TLPAREN ident_no_expand TRPAREN
+   51                | DEFINED . ident_no_expand
+
+    TLPAREN  shift, and go to state 90
+
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken     go to state 32
+    ident_no_expand  go to state 91
+
+
+state 42
+
+   47 evaluate_factor: NUMBER .
+
+    $default  reduce using rule 47 (evaluate_factor)
+
+
+state 43
+
+   45 evaluate_leave: TLPAREN . evaluate_expr TRPAREN
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    evaluate_expr    go to state 92
+    evaluate_leave   go to state 46
+    evaluate_factor  go to state 47
+    acquireToken     go to state 48
+    unary_op         go to state 49
+    ident            go to state 50
+
+
+state 44
+
+   33 ifdef_token: IF conditional_expr . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 93
+
+
+state 45
+
+   39 conditional_expr: evaluate_expr .
+
+    $default  reduce using rule 39 (conditional_expr)
+
+
+state 46
+
+   40 evaluate_expr: evaluate_leave . binary_op evaluate_expr
+   41              | evaluate_leave . TERNARY_LEFT_OP evaluate_leave TERNARY_RIGHT_OP evaluate_leave
+   42              | evaluate_leave .
+
+    TERNARY_LEFT_OP  shift, and go to state 94
+
+    BINARY_OP  reduce using rule 62 (acquireToken)
+    $default   reduce using rule 42 (evaluate_expr)
+
+    acquireToken  go to state 95
+    binary_op     go to state 96
+
+
+state 47
+
+   43 evaluate_leave: evaluate_factor . binary_op evaluate_factor
+   46               | evaluate_factor .
+
+    BINARY_OP  reduce using rule 46 (evaluate_leave)
+    BINARY_OP  [reduce using rule 62 (acquireToken)]
+    $default   reduce using rule 46 (evaluate_leave)
+
+    acquireToken  go to state 95
+    binary_op     go to state 97
+
+
+state 48
+
+   76 unary_op: acquireToken . _unary_op
+   80 ident: acquireToken . _ident
+
+    IDENT       shift, and go to state 98
+    IDENT_CALL  shift, and go to state 99
+    UNARY_OP    shift, and go to state 100
+
+    _unary_op  go to state 101
+    _ident     go to state 102
+
+
+state 49
+
+   44 evaluate_leave: unary_op . evaluate_leave
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    evaluate_leave   go to state 103
+    evaluate_factor  go to state 47
+    acquireToken     go to state 48
+    unary_op         go to state 49
+    ident            go to state 50
+
+
+state 50
+
+   48 evaluate_factor: ident .
+   49                | ident . args
+
+    TLPAREN   reduce using rule 61 (acquireArr)
+    $default  reduce using rule 48 (evaluate_factor)
+
+    args        go to state 104
+    acquireArr  go to state 105
+
+
+state 51
+
+   31 ifdef_token: IFDEF ident_no_expand . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 106
+
+
+state 52
+
+   32 ifdef_token: IFNDEF ident_no_expand . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 107
+
+
+state 53
+
+   34 ifdef_token: ELIF conditional_expr . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 108
+
+
+state 54
+
+   86 end_action: COMMENT .
+
+    $default  reduce using rule 86 (end_action)
+
+
+state 55
+
+   85 end_action: END_LINE .
+
+    $default  reduce using rule 85 (end_action)
+
+
+state 56
+
+   35 ifdef_token: ELSE end_action .
+
+    $default  reduce using rule 35 (ifdef_token)
+
+
+state 57
+
+   36 ifdef_token: END end_action .
+
+    $default  reduce using rule 36 (ifdef_token)
+
+
+state 58
+
+   26 error_token: ERROR tokens . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 109
+
+
+state 59
+
+   27 error_token: ERROR end_action .
+
+    $default  reduce using rule 27 (error_token)
+
+
+state 60
+
+   28 warning_token: WARNING tokens . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 110
+
+
+state 61
+
+   29 warning_token: WARNING end_action .
+
+    $default  reduce using rule 29 (warning_token)
+
+
+state 62
+
+   37 compute_token: COMPUTE evaluate_expr .
+
+    $default  reduce using rule 37 (compute_token)
+
+
+state 63
+
+    0 $accept: run $end .
+
+    $default  accept
+
+
+state 64
+
+    2 compilation_unit: stmnt compilation_unit .
+
+    $default  reduce using rule 2 (compilation_unit)
+
+
+state 65
+
+   15 newTokens: tokens end_action .
+
+    $default  reduce using rule 15 (newTokens)
+
+
+state 66
+
+   67 _tokensData: SYMBOLS .
+
+    $default  reduce using rule 67 (_tokensData)
+
+
+state 67
+
+   69 _tokensData: LITERAL .
+
+    $default  reduce using rule 69 (_tokensData)
+
+
+state 68
+
+   68 _tokensData: NUMBER .
+
+    $default  reduce using rule 68 (_tokensData)
+
+
+state 69
+
+   71 builtin_macro: BUILTIN_COLLAPSE_VARIADIC .
+
+    $default  reduce using rule 71 (builtin_macro)
+
+
+state 70
+
+   70 builtin_macro: BUILTIN_CONCAT .
+
+    $default  reduce using rule 70 (builtin_macro)
+
+
+state 71
+
+   72 builtin_macro: BUILTIN_LINE .
+
+    $default  reduce using rule 72 (builtin_macro)
+
+
+state 72
+
+   73 builtin_macro: BUILTIN_STRINGIZED .
+
+    $default  reduce using rule 73 (builtin_macro)
+
+
+state 73
+
+   80 ident: acquireToken . _ident
+
+    IDENT       shift, and go to state 98
+    IDENT_CALL  shift, and go to state 99
+
+    _ident  go to state 102
+
+
+state 74
+
+   60 tokens: acquireArr _tokens .
+
+    $default  reduce using rule 60 (tokens)
+
+
+state 75
+
+   63 _tokens: _tokensData . _tokens
+   64        | _tokensData .
+
+    SYMBOLS                    shift, and go to state 66
+    LITERAL                    shift, and go to state 67
+    NUMBER                     shift, and go to state 68
+    BUILTIN_COLLAPSE_VARIADIC  shift, and go to state 69
+    BUILTIN_CONCAT             shift, and go to state 70
+    BUILTIN_LINE               shift, and go to state 71
+    BUILTIN_STRINGIZED         shift, and go to state 72
+
+    COMMENT   reduce using rule 64 (_tokens)
+    END_LINE  reduce using rule 64 (_tokens)
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken   go to state 73
+    _tokens        go to state 111
+    _tokensData    go to state 75
+    builtin_macro  go to state 76
+    ident          go to state 77
+
+
+state 76
+
+   65 _tokensData: builtin_macro .
+
+    $default  reduce using rule 65 (_tokensData)
+
+
+state 77
+
+   66 _tokensData: ident .
+
+    $default  reduce using rule 66 (_tokensData)
+
+
+state 78
+
+   30 pragma_token: PRAGMA tokens end_action .
+
+    $default  reduce using rule 30 (pragma_token)
+
+
+state 79
+
+   78 ident_no_expand: acquireToken _ident_no_expand .
+
+    $default  reduce using rule 78 (ident_no_expand)
+
+
+state 80
+
+   22 define_token: DEFINE ident_no_expand define_definition . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 112
+
+
+state 81
+
+   21 define_token: DEFINE ident_no_expand args . define_definition end_action
+   23             | DEFINE ident_no_expand args . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    $default  reduce using rule 61 (acquireArr)
+
+    define_definition  go to state 113
+    tokens             go to state 82
+    acquireArr         go to state 30
+    end_action         go to state 114
+
+
+state 82
+
+   38 define_definition: tokens .
+
+    $default  reduce using rule 38 (define_definition)
+
+
+state 83
+
+   52 args: acquireArr . foo _args
+   60 tokens: acquireArr . _tokens
+
+    SYMBOLS                    shift, and go to state 66
+    LITERAL                    shift, and go to state 67
+    NUMBER                     shift, and go to state 68
+    BUILTIN_COLLAPSE_VARIADIC  shift, and go to state 69
+    BUILTIN_CONCAT             shift, and go to state 70
+    BUILTIN_LINE               shift, and go to state 71
+    BUILTIN_STRINGIZED         shift, and go to state 72
+
+    TLPAREN   reduce using rule 59 (foo)
+    $default  reduce using rule 62 (acquireToken)
+
+    foo            go to state 115
+    acquireToken   go to state 73
+    _tokens        go to state 74
+    _tokensData    go to state 75
+    builtin_macro  go to state 76
+    ident          go to state 77
+
+
+state 84
+
+   24 define_token: DEFINE ident_no_expand end_action .
+
+    $default  reduce using rule 24 (define_token)
+
+
+state 85
+
+   25 undefine_token: UNDEFINE ident_no_expand end_action .
+
+    $default  reduce using rule 25 (undefine_token)
+
+
+state 86
+
+   17 include_token: INCLUDE INCLUDE_COMMA_DELIM INCLUDE_FILENAME . INCLUDE_COMMA_DELIM
+
+    INCLUDE_COMMA_DELIM  shift, and go to state 116
+
+
+state 87
+
+   18 include_token: INCLUDE INCLUDE_GL_DELIM INCLUDE_FILENAME . INCLUDE_GL_DELIM
+
+    INCLUDE_GL_DELIM  shift, and go to state 117
+
+
+state 88
+
+   19 include_token: INCLUDE_NEXT INCLUDE_COMMA_DELIM INCLUDE_FILENAME . INCLUDE_COMMA_DELIM
+
+    INCLUDE_COMMA_DELIM  shift, and go to state 118
+
+
+state 89
+
+   20 include_token: INCLUDE_NEXT INCLUDE_GL_DELIM INCLUDE_FILENAME . INCLUDE_GL_DELIM
+
+    INCLUDE_GL_DELIM  shift, and go to state 119
+
+
+state 90
+
+   50 evaluate_factor: DEFINED TLPAREN . ident_no_expand TRPAREN
+
+    $default  reduce using rule 62 (acquireToken)
+
+    acquireToken     go to state 32
+    ident_no_expand  go to state 120
+
+
+state 91
+
+   51 evaluate_factor: DEFINED ident_no_expand .
+
+    $default  reduce using rule 51 (evaluate_factor)
+
+
+state 92
+
+   45 evaluate_leave: TLPAREN evaluate_expr . TRPAREN
+
+    TRPAREN  shift, and go to state 121
+
+
+state 93
+
+   33 ifdef_token: IF conditional_expr end_action .
+
+    $default  reduce using rule 33 (ifdef_token)
+
+
+state 94
+
+   41 evaluate_expr: evaluate_leave TERNARY_LEFT_OP . evaluate_leave TERNARY_RIGHT_OP evaluate_leave
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    evaluate_leave   go to state 122
+    evaluate_factor  go to state 47
+    acquireToken     go to state 48
+    unary_op         go to state 49
+    ident            go to state 50
+
+
+state 95
+
+   74 binary_op: acquireToken . _binary_op
+
+    BINARY_OP  shift, and go to state 123
+
+    _binary_op  go to state 124
+
+
+state 96
+
+   40 evaluate_expr: evaluate_leave binary_op . evaluate_expr
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    evaluate_expr    go to state 125
+    evaluate_leave   go to state 46
+    evaluate_factor  go to state 47
+    acquireToken     go to state 48
+    unary_op         go to state 49
+    ident            go to state 50
+
+
+state 97
+
+   43 evaluate_leave: evaluate_factor binary_op . evaluate_factor
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+
+    $default  reduce using rule 62 (acquireToken)
+
+    evaluate_factor  go to state 126
+    acquireToken     go to state 73
+    ident            go to state 50
+
+
+state 98
+
+   81 _ident: IDENT .
+
+    $default  reduce using rule 81 (_ident)
+
+
+state 99
+
+   82 _ident: IDENT_CALL .
+
+    $default  reduce using rule 82 (_ident)
+
+
+state 100
+
+   77 _unary_op: UNARY_OP .
+
+    $default  reduce using rule 77 (_unary_op)
+
+
+state 101
+
+   76 unary_op: acquireToken _unary_op .
+
+    $default  reduce using rule 76 (unary_op)
+
+
+state 102
+
+   80 ident: acquireToken _ident .
+
+    $default  reduce using rule 80 (ident)
+
+
+state 103
+
+   44 evaluate_leave: unary_op evaluate_leave .
+
+    $default  reduce using rule 44 (evaluate_leave)
+
+
+state 104
+
+   49 evaluate_factor: ident args .
+
+    $default  reduce using rule 49 (evaluate_factor)
+
+
+state 105
+
+   52 args: acquireArr . foo _args
+
+    $default  reduce using rule 59 (foo)
+
+    foo  go to state 115
+
+
+state 106
+
+   31 ifdef_token: IFDEF ident_no_expand end_action .
+
+    $default  reduce using rule 31 (ifdef_token)
+
+
+state 107
+
+   32 ifdef_token: IFNDEF ident_no_expand end_action .
+
+    $default  reduce using rule 32 (ifdef_token)
+
+
+state 108
+
+   34 ifdef_token: ELIF conditional_expr end_action .
+
+    $default  reduce using rule 34 (ifdef_token)
+
+
+state 109
+
+   26 error_token: ERROR tokens end_action .
+
+    $default  reduce using rule 26 (error_token)
+
+
+state 110
+
+   28 warning_token: WARNING tokens end_action .
+
+    $default  reduce using rule 28 (warning_token)
+
+
+state 111
+
+   63 _tokens: _tokensData _tokens .
+
+    $default  reduce using rule 63 (_tokens)
+
+
+state 112
+
+   22 define_token: DEFINE ident_no_expand define_definition end_action .
+
+    $default  reduce using rule 22 (define_token)
+
+
+state 113
+
+   21 define_token: DEFINE ident_no_expand args define_definition . end_action
+
+    COMMENT   shift, and go to state 54
+    END_LINE  shift, and go to state 55
+
+    end_action  go to state 127
+
+
+state 114
+
+   23 define_token: DEFINE ident_no_expand args end_action .
+
+    $default  reduce using rule 23 (define_token)
+
+
+state 115
+
+   52 args: acquireArr foo . _args
+
+    TLPAREN  shift, and go to state 128
+
+    _args  go to state 129
+
+
+state 116
+
+   17 include_token: INCLUDE INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM .
+
+    $default  reduce using rule 17 (include_token)
+
+
+state 117
+
+   18 include_token: INCLUDE INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM .
+
+    $default  reduce using rule 18 (include_token)
+
+
+state 118
+
+   19 include_token: INCLUDE_NEXT INCLUDE_COMMA_DELIM INCLUDE_FILENAME INCLUDE_COMMA_DELIM .
+
+    $default  reduce using rule 19 (include_token)
+
+
+state 119
+
+   20 include_token: INCLUDE_NEXT INCLUDE_GL_DELIM INCLUDE_FILENAME INCLUDE_GL_DELIM .
+
+    $default  reduce using rule 20 (include_token)
+
+
+state 120
+
+   50 evaluate_factor: DEFINED TLPAREN ident_no_expand . TRPAREN
+
+    TRPAREN  shift, and go to state 130
+
+
+state 121
+
+   45 evaluate_leave: TLPAREN evaluate_expr TRPAREN .
+
+    $default  reduce using rule 45 (evaluate_leave)
+
+
+state 122
+
+   41 evaluate_expr: evaluate_leave TERNARY_LEFT_OP evaluate_leave . TERNARY_RIGHT_OP evaluate_leave
+
+    TERNARY_RIGHT_OP  shift, and go to state 131
+
+
+state 123
+
+   75 _binary_op: BINARY_OP .
+
+    $default  reduce using rule 75 (_binary_op)
+
+
+state 124
+
+   74 binary_op: acquireToken _binary_op .
+
+    $default  reduce using rule 74 (binary_op)
+
+
+state 125
+
+   40 evaluate_expr: evaluate_leave binary_op evaluate_expr .
+
+    $default  reduce using rule 40 (evaluate_expr)
+
+
+state 126
+
+   43 evaluate_leave: evaluate_factor binary_op evaluate_factor .
+
+    $default  reduce using rule 43 (evaluate_leave)
+
+
+state 127
+
+   21 define_token: DEFINE ident_no_expand args define_definition end_action .
+
+    $default  reduce using rule 21 (define_token)
+
+
+state 128
+
+   53 _args: TLPAREN . _arg TRPAREN
+   54      | TLPAREN . TRPAREN
+
+    TRPAREN  shift, and go to state 132
+
+    $default  reduce using rule 62 (acquireToken)
+
+    _arg          go to state 133
+    _argsIdent    go to state 134
+    acquireToken  go to state 135
+    ident         go to state 136
+    number        go to state 137
+
+
+state 129
+
+   52 args: acquireArr foo _args .
+
+    $default  reduce using rule 52 (args)
+
+
+state 130
+
+   50 evaluate_factor: DEFINED TLPAREN ident_no_expand TRPAREN .
+
+    $default  reduce using rule 50 (evaluate_factor)
+
+
+state 131
+
+   41 evaluate_expr: evaluate_leave TERNARY_LEFT_OP evaluate_leave TERNARY_RIGHT_OP . evaluate_leave
+
+    DEFINED  shift, and go to state 41
+    NUMBER   shift, and go to state 42
+    TLPAREN  shift, and go to state 43
+
+    $default  reduce using rule 62 (acquireToken)
+
+    evaluate_leave   go to state 138
+    evaluate_factor  go to state 47
+    acquireToken     go to state 48
+    unary_op         go to state 49
+    ident            go to state 50
+
+
+state 132
+
+   54 _args: TLPAREN TRPAREN .
+
+    $default  reduce using rule 54 (_args)
+
+
+state 133
+
+   53 _args: TLPAREN _arg . TRPAREN
+
+    TRPAREN  shift, and go to state 139
+
+
+state 134
+
+   55 _arg: _argsIdent . TCOMMA _arg
+   56     | _argsIdent .
+
+    TCOMMA  shift, and go to state 140
+
+    $default  reduce using rule 56 (_arg)
+
+
+state 135
+
+   80 ident: acquireToken . _ident
+   83 number: acquireToken . _number
+
+    IDENT       shift, and go to state 98
+    IDENT_CALL  shift, and go to state 99
+    NUMBER      shift, and go to state 141
+
+    _ident   go to state 102
+    _number  go to state 142
+
+
+state 136
+
+   57 _argsIdent: ident .
+
+    $default  reduce using rule 57 (_argsIdent)
+
+
+state 137
+
+   58 _argsIdent: number .
+
+    $default  reduce using rule 58 (_argsIdent)
+
+
+state 138
+
+   41 evaluate_expr: evaluate_leave TERNARY_LEFT_OP evaluate_leave TERNARY_RIGHT_OP evaluate_leave .
+
+    $default  reduce using rule 41 (evaluate_expr)
+
+
+state 139
+
+   53 _args: TLPAREN _arg TRPAREN .
+
+    $default  reduce using rule 53 (_args)
+
+
+state 140
+
+   55 _arg: _argsIdent TCOMMA . _arg
+
+    $default  reduce using rule 62 (acquireToken)
+
+    _arg          go to state 143
+    _argsIdent    go to state 134
+    acquireToken  go to state 135
+    ident         go to state 136
+    number        go to state 137
+
+
+state 141
+
+   84 _number: NUMBER .
+
+    $default  reduce using rule 84 (_number)
+
+
+state 142
+
+   83 number: acquireToken _number .
+
+    $default  reduce using rule 83 (number)
+
+
+state 143
+
+   55 _arg: _argsIdent TCOMMA _arg .
+
+    $default  reduce using rule 55 (_arg)

@@ -1,0 +1,1 @@
+# 1 "./test/test.h" # 1 "./test/test.cpp" int main(int argc,char* argv[]) { int a=5; return 0;}

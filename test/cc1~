@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo "my preprocessor -- $@"
+
+/usr/lib/gcc/i686-linux-gnu/4.8.1/cc1 $@
+
+
+exit $?
